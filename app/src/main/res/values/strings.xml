@@ -4,4 +4,5 @@
     <string name="dish_1">Кабачки с креветками и перцем</string>
     <string name="dish_2">Свинина с перцем</string>
     <string name="action_settings"></string>
+    <string name="action_search">Поиск</string>
 </resources>

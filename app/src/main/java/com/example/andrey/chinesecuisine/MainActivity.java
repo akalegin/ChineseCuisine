@@ -42,8 +42,6 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void showDish(View view) {
-        Intent intent = new Intent(this, DisplayMessageActivity.class);
-        intent.putExtra(EXTRA_MESSAGE, "MATUMBA");
-        startActivity(intent);
+
     }
 }

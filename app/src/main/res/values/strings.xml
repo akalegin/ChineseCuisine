@@ -1,18 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Китайская кухня</string>
-    <string name="action_settings"></string>
+    <string name="action_settings">Настройки</string>
     <string name="action_search">Поиск</string>
-
-    <string-array
-        name="dishes">
-        <item>Кабачки с креветками и перцем</item>
-        <item>Имбирный напиток</item>
-    </string-array>
-
-    <string-array
-        name="recipes">
-        <item>Кабачки порезать\nЧеснок порезать\nИмбирь порезать\nПерец порезать\nНакалить масло на сковороде\nПоложить имбирь и перец\nПоложить кабачки\nПоложить креветки и чеснок</item>j
-        <item>Порезать имбирь\nПоложить его в кастрюлю, залить водой\nДовести до кипения\nПоложить красный сахар\nВыключить огонь\nПоложить мёд и лимон</item>
-    </string-array>
+    <string name="ingredients">Ингредиенты</string>
+    <string name="cook_steps">Порядок действий</string>
 </resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array
+        name="dishes">
+        <item>Кабачки с креветками и перцем</item>
+        <item>Имбирный напиток</item>
+    </string-array>
+
+    <string-array name="ingredients">
+        <item>Кабачки\nЧеснок\nИмбирь\nПерец чили\nКреветки\nПодсолнечное масло\nСоевый соус\nСоль</item>
+        <item>Имбирь\nТростниковый сахар\nВода\nЛимон\nМёд</item>
+    </string-array>
+
+    <string-array
+        name="recipes">
+        <item>Кабачки порезать\nЧеснок порезать\nИмбирь порезать\nПерец порезать\nНакалить масло на сковороде\nПоложить имбирь и перец\nПоложить кабачки\nПоложить креветки и чеснок</item>j
+        <item>Порезать имбирь\nПоложить его в кастрюлю, залить водой\nДовести до кипения\nПоложить красный сахар\nВыключить огонь\nПоложить мёд и лимон</item>
+    </string-array>
+
+    <array name="dish_img_array">
+        <item>@drawable/ginger_drink</item>
+        <item>@drawable/zucchini_shrimps</item>
+    </array>
+</resources>

@@ -1,10 +1,13 @@
 package com.example.andrey.chinesecuisine;
 
+import android.content.res.Resources;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 
@@ -46,8 +49,29 @@ public class RecipeFragment extends Fragment {
     }
 
     public void updateRecipeView(int position) {
-        TextView article = (TextView) getActivity().findViewById(R.id.recipe);
-        article.setText(getResources().getStringArray(R.array.recipes)[position]);
+        Resources res = getResources();
+        TextView recipe = (TextView) getActivity().findViewById(R.id.recipe);
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append("<H1>");
+        stringBuilder.append(getString(R.string.ingredients));
+        stringBuilder.append("</H1>");
+        stringBuilder.append("<br>");
+        stringBuilder.append(res.getStringArray(R.array.ingredients)[position].replace("\n","<br>"));
+        stringBuilder.append("<br>");
+        stringBuilder.append("<H1>");
+        stringBuilder.append(getString(R.string.cook_steps));
+        stringBuilder.append("</H1>");
+        stringBuilder.append("<br>");
+        stringBuilder.append(res.getStringArray(R.array.recipes)[position].replace("\n","<br>"));
+
+        recipe.setText(Html.fromHtml(stringBuilder.toString()));
+
+        ImageView dishImageView = (ImageView) getActivity().findViewById(R.id.dinner_is_served);
+        dishImageView.setImageDrawable(res.obtainTypedArray(R.array.dish_img_array).getDrawable(position));
+        dishImageView.setVisibility(View.VISIBLE);
+
         mCurrentPosition = position;
     }
 

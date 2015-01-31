@@ -62,10 +62,7 @@ public class RecipeFragment extends Fragment {
         stringBuilder.append("</H1>");
         stringBuilder.append("<br>");
 
-        for (String ingredient : currentDish.getIngredients()) {
-            stringBuilder.append(ingredient);
-            stringBuilder.append("<br>");
-        }
+        stringBuilder.append(currentDish.getIngredients());
 
         stringBuilder.append("<br>");
         stringBuilder.append("<H1>");
@@ -73,10 +70,7 @@ public class RecipeFragment extends Fragment {
         stringBuilder.append("</H1>");
         stringBuilder.append("<br>");
 
-        for (String cook_step : currentDish.getCookSteps()) {
-            stringBuilder.append(cook_step);
-            stringBuilder.append("<br>");
-        }
+        stringBuilder.append(currentDish.getCookSteps());
 
         recipe.setText(Html.fromHtml(stringBuilder.toString()));
 

@@ -1,15 +1,14 @@
 package com.example.andrey.chinesecuisine;
 
 import android.graphics.Bitmap;
-import java.util.List;
 
 public class Dish  {
     private String myName;
-    private List<String> myIngredients;
-    private List<String> myCookSteps;
+    private String myIngredients;
+    private String myCookSteps;
     private Bitmap myImage;
 
-    public Dish(String name, List<String> ingredients, List<String> cookSteps, Bitmap image) {
+    public Dish(String name, String ingredients, String cookSteps, Bitmap image) {
         this.myName = name;
         this.myIngredients = ingredients;
         this.myCookSteps = cookSteps;
@@ -25,11 +24,11 @@ public class Dish  {
         return myImage;
     }
 
-    public List<String> getIngredients() {
+    public String getIngredients() {
         return myIngredients;
     }
 
-    public List<String> getCookSteps() {
+    public String getCookSteps() {
         return myCookSteps;
     }
 }

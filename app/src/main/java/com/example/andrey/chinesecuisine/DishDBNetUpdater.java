@@ -1,13 +1,17 @@
 package com.example.andrey.chinesecuisine;
 
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -27,8 +31,40 @@ public class DishDBNetUpdater {
 
     }
 
-    public List<Dish> getActual() {
-        List<Dish> result = new ArrayList<>();
+    private void updateLocalDb(Context context) {
+        List<Dish> dishList = dishListFromNet();
+
+        RecipeReaderDbHelper mDbHelper = new RecipeReaderDbHelper(context);
+
+        // Gets the data repository in write mode
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+        // Create a new map of values, where column names are the keys
+        ContentValues values = new ContentValues();
+
+        for (Dish dish : dishList) {
+            values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_DISH, dish.getName());
+            values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_INGREDIENTS, dish.getIngredients());
+            values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_COOK_STEPS, dish.getCookSteps());
+            values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_IMAGE, getBitmapAsByteArray(dish.getImage()));
+
+            db.insert(RecipeReaderContract.RecipeEntry.TABLE_NAME,
+                    null,
+                    values);
+            values.clear();
+        }
+
+        db.close();
+    }
+
+    public static byte[] getBitmapAsByteArray(Bitmap bitmap) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 0, outputStream);
+        return outputStream.toByteArray();
+    }
+
+    private List<Dish> dishListFromNet() {
+        List<Dish> dishList = new ArrayList<>();
 
         InputStream is = null;
 
@@ -55,7 +91,7 @@ public class DishDBNetUpdater {
                     JSONObject oneRecipe = jDishArray.getJSONObject(i);
                     Dish dish = DishFromJSON(oneRecipe);
 
-                    result.add(dish);
+                    dishList.add(dish);
                 }
             }
         } catch (Exception e){
@@ -64,39 +100,68 @@ public class DishDBNetUpdater {
             try{if(is != null)is.close();}catch(Exception e){}
         }
 
+        return  dishList;
+    }
+
+    private List<Dish> localDbToDishList(Context context) {
+        List<Dish> result = new ArrayList<>();
+
+        RecipeReaderDbHelper mDbHelper = new RecipeReaderDbHelper(context);
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+        String[] projection = {
+                RecipeReaderContract.RecipeEntry._ID,
+                RecipeReaderContract.RecipeEntry.COLUMN_NAME_DISH,
+                RecipeReaderContract.RecipeEntry.COLUMN_NAME_INGREDIENTS,
+                RecipeReaderContract.RecipeEntry.COLUMN_NAME_COOK_STEPS,
+                RecipeReaderContract.RecipeEntry.COLUMN_NAME_IMAGE
+        };
+
+        // How you want the results sorted in the resulting Cursor
+        String sortOrder =
+                RecipeReaderContract.RecipeEntry.COLUMN_NAME_DISH + " DESC";
+
+        Cursor cursor = db.query(
+                RecipeReaderContract.RecipeEntry.TABLE_NAME,  // The table to query
+                projection,                               // The columns to return
+                null,                                // The columns for the WHERE clause
+                null,                            // The values for the WHERE clause
+                null,                                     // don't group the rows
+                null,                                     // don't filter by row groups
+                sortOrder                                 // The sort order
+        );
+
+        for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+            byte[] blob = cursor.getBlob(cursor.getColumnIndexOrThrow(RecipeReaderContract.RecipeEntry.COLUMN_NAME_IMAGE));
+            Bitmap bitmap = BitmapFactory.decodeByteArray(blob , 0, blob.length);
+            Dish dish = new Dish(cursor.getString(cursor.getColumnIndexOrThrow(RecipeReaderContract.RecipeEntry.COLUMN_NAME_DISH)),
+                    cursor.getString(cursor.getColumnIndexOrThrow(RecipeReaderContract.RecipeEntry.COLUMN_NAME_INGREDIENTS)),
+                    cursor.getString(cursor.getColumnIndexOrThrow(RecipeReaderContract.RecipeEntry.COLUMN_NAME_COOK_STEPS)),
+                    bitmap);
+            result.add(dish);
+        }
+        cursor.close();
+
+        db.close();
+
         return result;
+    }
+
+    public List<Dish> getActual(Context context) {
+        updateLocalDb(context);
+        return localDbToDishList(context);
     }
 
     public Dish DishFromJSON(JSONObject jObject) {
         String dishName = "";
-        List<String> ingredients = new ArrayList<>();
-        List<String> cookSteps = new ArrayList<>();
+        String ingredients = "";
+        String cookSteps = "";
         Bitmap dishImage = null;
 
         try {
             dishName = jObject.getString("dish");
-
-            JSONArray jIngredientsArray = jObject.getJSONArray("ingredients");
-
-            for (int i = 0; i < jIngredientsArray.length(); ++i)
-            {
-                try {
-                    ingredients.add(jIngredientsArray.getString(i));
-                } catch (JSONException e) {
-                    // Oops
-                }
-            }
-
-            JSONArray jSequenceOfActions = jObject.getJSONArray("sequence_of_actions");
-
-            for (int i = 0; i < jSequenceOfActions.length(); ++i)
-            {
-                try {
-                    cookSteps.add(jSequenceOfActions.getString(i));
-                } catch (JSONException e) {
-                    // Oops
-                }
-            }
+            ingredients = jObject.getString("ingredients");
+            cookSteps = jObject.getString("cook_steps");
 
             String dishImageUrl = jObject.getString("image_url");
             dishImage = downloadImage(ONLINE_DB_URL + "/" + dishImageUrl);

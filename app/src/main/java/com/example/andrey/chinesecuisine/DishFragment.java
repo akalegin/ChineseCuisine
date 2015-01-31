@@ -37,7 +37,7 @@ public class DishFragment extends ListFragment {
     }
 
     private void syncDishesWithNet() {
-        DISHES = DishDBNetUpdater.INSTANCE.getActual();
+        DISHES = DishDBNetUpdater.INSTANCE.getActual(getActivity());
     }
 
     String[] getDishNames() {

@@ -47,7 +47,7 @@ public class MainActivity extends ActionBarActivity
         if (recipeFrag != null) {
             // If article frag is available, we're in two-pane layout...
 
-            // Call a method in the ArticleFragment to update its content
+            // Call a method in the ArticleFragment to ic_update its content
             recipeFrag.updateRecipeView(position);
 
         } else {

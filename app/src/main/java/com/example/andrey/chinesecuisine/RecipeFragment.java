@@ -1,6 +1,7 @@
 package com.example.andrey.chinesecuisine;
 
 import android.content.res.Resources;
+import android.graphics.drawable.BitmapDrawable;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.text.Html;
@@ -52,25 +53,41 @@ public class RecipeFragment extends Fragment {
         Resources res = getResources();
         TextView recipe = (TextView) getActivity().findViewById(R.id.recipe);
 
+        Dish currentDish = DishFragment.DISHES.get(position);
+
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("<H1>");
         stringBuilder.append(getString(R.string.ingredients));
         stringBuilder.append("</H1>");
         stringBuilder.append("<br>");
-        stringBuilder.append(res.getStringArray(R.array.ingredients)[position].replace("\n","<br>"));
+
+        for (String ingredient : currentDish.getIngredients()) {
+            stringBuilder.append(ingredient);
+            stringBuilder.append("<br>");
+        }
+
         stringBuilder.append("<br>");
         stringBuilder.append("<H1>");
         stringBuilder.append(getString(R.string.cook_steps));
         stringBuilder.append("</H1>");
         stringBuilder.append("<br>");
-        stringBuilder.append(res.getStringArray(R.array.recipes)[position].replace("\n","<br>"));
+
+        for (String cook_step : currentDish.getCookSteps()) {
+            stringBuilder.append(cook_step);
+            stringBuilder.append("<br>");
+        }
 
         recipe.setText(Html.fromHtml(stringBuilder.toString()));
 
         ImageView dishImageView = (ImageView) getActivity().findViewById(R.id.dinner_is_served);
-        dishImageView.setImageDrawable(res.obtainTypedArray(R.array.dish_img_array).getDrawable(position));
-        dishImageView.setVisibility(View.VISIBLE);
+        if (currentDish.getImage() != null) {
+            //dishImageView.setImageDrawable(res.obtainTypedArray(R.array.dish_img_array).getDrawable(position));
+            dishImageView.setImageDrawable(new BitmapDrawable(res, currentDish.getImage()));
+            dishImageView.setVisibility(View.VISIBLE);
+        } else {
+            dishImageView.setVisibility(View.INVISIBLE);
+        }
 
         mCurrentPosition = position;
     }

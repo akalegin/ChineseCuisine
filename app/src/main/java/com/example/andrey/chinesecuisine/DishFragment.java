@@ -7,10 +7,13 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class DishFragment extends ListFragment {
-    OnDishSelectedListener mCallback;
+    public static List<Dish> DISHES = new ArrayList<>();
+    private OnDishSelectedListener mCallback;
 
     // The container Activity must implement this interface so the frag can deliver messages
     public interface OnDishSelectedListener {
@@ -26,8 +29,23 @@ public class DishFragment extends ListFragment {
         int layout = Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ?
                 android.R.layout.simple_list_item_activated_1 : android.R.layout.simple_list_item_1;
 
+        syncDishesWithNet();
+
         // Create an array adapter for the list view, using the Ipsum dishes array
-        setListAdapter(new ArrayAdapter<String>(getActivity(), layout, getResources().getStringArray(R.array.dishes)));
+        //setListAdapter(new ArrayAdapter<String>(getActivity(), layout, getResources().getStringArray(R.array.dishes)));
+        setListAdapter(new ArrayAdapter<>(getActivity(), layout, getDishNames()));
+    }
+
+    private void syncDishesWithNet() {
+        DISHES = DishDBNetUpdater.INSTANCE.getActual();
+    }
+
+    String[] getDishNames() {
+        String[] result = new String[DISHES.size()];
+        for (int i = 0; i < DISHES.size(); ++i) {
+            result[i] = DISHES.get(i).getName();
+        }
+        return result;
     }
 
     @Override

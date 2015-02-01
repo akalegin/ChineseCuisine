@@ -2,10 +2,12 @@ package com.example.andrey.chinesecuisine;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,41 +28,84 @@ public class DishDBNetUpdater {
 
     private static String ONLINE_DB_URL = "http://kalegin-chinese-cuisine.appspot.com";
     private static String RECIPES_SUFFIX = "recipes";
+    private static String VERSION_SUFFIX = "version";
 
     private DishDBNetUpdater() {
 
     }
 
-    private void updateLocalDb(Context context) {
-        List<Dish> dishList = dishListFromNet();
+    private void updateLocalDb(Context context, SharedPreferences sharedPreferences) {
+        // Если текущая версия базы данных меньше той, что доступна на сервере, то
+        // произведём обновление.
+        int defaultDbVersion = context.getResources().getInteger(R.integer.default_db_version);
+        int localDbVersion = sharedPreferences.getInt(context.getResources().getString(R.string.local_db_version), defaultDbVersion);
+        int onlineDbVersion = getOnlineDbVersion(localDbVersion);
 
-        RecipeReaderDbHelper mDbHelper = new RecipeReaderDbHelper(context);
+        if (onlineDbVersion > localDbVersion) {
+            List<Dish> dishList = dishListFromNet();
 
-        // Gets the data repository in write mode
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+            RecipeReaderDbHelper mDbHelper = new RecipeReaderDbHelper(context);
 
-        // Create a new map of values, where column names are the keys
-        ContentValues values = new ContentValues();
+            // Gets the data repository in write mode
+            SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
-        for (Dish dish : dishList) {
-            values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_DISH, dish.getName());
-            values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_INGREDIENTS, dish.getIngredients());
-            values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_COOK_STEPS, dish.getCookSteps());
-            values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_IMAGE, getBitmapAsByteArray(dish.getImage()));
+            Log.d("DishDBNetUpdater", "DB version is " + db.getVersion());
 
-            db.insert(RecipeReaderContract.RecipeEntry.TABLE_NAME,
-                    null,
-                    values);
-            values.clear();
+            // Create a new map of values, where column names are the keys
+            ContentValues values = new ContentValues();
+
+            for (Dish dish : dishList) {
+                values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_DISH, dish.getName());
+                values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_INGREDIENTS, dish.getIngredients());
+                values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_COOK_STEPS, dish.getCookSteps());
+                values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_IMAGE, getBitmapAsByteArray(dish.getImage()));
+
+                db.insert(RecipeReaderContract.RecipeEntry.TABLE_NAME,
+                        null,
+                        values);
+                values.clear();
+            }
+
+            db.close();
+
+            //Сохраним информацию о версии локального набора данных
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt(context.getResources().getString(R.string.local_db_version), onlineDbVersion);
+            editor.commit();
         }
-
-        db.close();
     }
 
     public static byte[] getBitmapAsByteArray(Bitmap bitmap) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 0, outputStream);
         return outputStream.toByteArray();
+    }
+
+    private int getOnlineDbVersion(int localDbVersion) {
+        InputStream is = null;
+
+        try {
+            String strURL = ONLINE_DB_URL + "/" + VERSION_SUFFIX;
+            URL url = new URL(strURL);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+
+            if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                is = conn.getInputStream();
+                String contentAsString = readIt(is).replaceAll("[^\\d]", "");
+                return Integer.parseInt(contentAsString);
+            }
+        } catch (Exception e){
+
+        } finally {
+            try{if(is != null)is.close();}catch(Exception e){}
+        }
+
+        return localDbVersion;
     }
 
     private List<Dish> dishListFromNet() {
@@ -147,8 +192,8 @@ public class DishDBNetUpdater {
         return result;
     }
 
-    public List<Dish> getActual(Context context) {
-        updateLocalDb(context);
+    public List<Dish> getActual(Context context, SharedPreferences sharedPreferences) {
+        updateLocalDb(context, sharedPreferences);
         return localDbToDishList(context);
     }
 

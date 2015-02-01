@@ -6,4 +6,7 @@
     <string name="action_update">Обновить</string>
     <string name="ingredients">Ингредиенты</string>
     <string name="cook_steps">Порядок действий</string>
+    <string name="local_db_version">local_db_version</string>
+
+    <integer name="default_db_version">1</integer>
 </resources>

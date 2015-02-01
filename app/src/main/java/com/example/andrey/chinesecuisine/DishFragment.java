@@ -1,6 +1,7 @@
 package com.example.andrey.chinesecuisine;
 
 import android.app.Activity;
+import android.content.Context;
 import android.support.v4.app.ListFragment;
 import android.os.Build;
 import android.os.Bundle;
@@ -37,7 +38,7 @@ public class DishFragment extends ListFragment {
     }
 
     private void syncDishesWithNet() {
-        DISHES = DishDBNetUpdater.INSTANCE.getActual(getActivity());
+        DISHES = DishDBNetUpdater.INSTANCE.getActual(getActivity(), getActivity().getPreferences(Context.MODE_PRIVATE));
     }
 
     String[] getDishNames() {

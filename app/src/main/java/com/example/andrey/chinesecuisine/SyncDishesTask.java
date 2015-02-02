@@ -1,5 +1,6 @@
 package com.example.andrey.chinesecuisine;
 
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,7 +8,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.ProgressBar;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -17,22 +20,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DishDBNetUpdater {
-
-    public static final DishDBNetUpdater INSTANCE = new DishDBNetUpdater();
+public class SyncDishesTask extends AsyncTask<Void, Integer, Boolean> {
+    private final WeakReference<Activity> myActivity;
+    private final WeakReference<DishFragment> myFragment;
 
     private static String ONLINE_DB_URL = "http://kalegin-chinese-cuisine.appspot.com";
     private static String RECIPES_SUFFIX = "recipes";
     private static String VERSION_SUFFIX = "version";
-
-    private DishDBNetUpdater() {
-
-    }
 
     private void updateLocalDb(Context context, SharedPreferences sharedPreferences) {
         // Если текущая версия базы данных меньше той, что доступна на сервере, то
@@ -55,6 +55,7 @@ public class DishDBNetUpdater {
             ContentValues values = new ContentValues();
 
             for (Dish dish : dishList) {
+                Log.d("DishDBNetUpdater", "Dish name is " + dish.getName());
                 values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_DISH, dish.getName());
                 values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_INGREDIENTS, dish.getIngredients());
                 values.put(RecipeReaderContract.RecipeEntry.COLUMN_NAME_COOK_STEPS, dish.getCookSteps());
@@ -83,11 +84,12 @@ public class DishDBNetUpdater {
 
     private int getOnlineDbVersion(int localDbVersion) {
         InputStream is = null;
+        HttpURLConnection conn = null;
 
         try {
             String strURL = ONLINE_DB_URL + "/" + VERSION_SUFFIX;
             URL url = new URL(strURL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
             conn.setReadTimeout(10000);
             conn.setConnectTimeout(15000);
             conn.setRequestMethod("GET");
@@ -100,9 +102,12 @@ public class DishDBNetUpdater {
                 return Integer.parseInt(contentAsString);
             }
         } catch (Exception e){
-
+            e.printStackTrace();
         } finally {
-            try{if(is != null)is.close();}catch(Exception e){}
+            try {
+                if(is != null)is.close();
+                if(conn != null) conn.disconnect();
+            } catch(Exception e) {}
         }
 
         return localDbVersion;
@@ -112,11 +117,13 @@ public class DishDBNetUpdater {
         List<Dish> dishList = new ArrayList<>();
 
         InputStream is = null;
+        HttpURLConnection conn = null;
 
         try {
             String strURL = ONLINE_DB_URL + "/" + RECIPES_SUFFIX;
             URL url = new URL(strURL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
+
             conn.setReadTimeout(10000);
             conn.setConnectTimeout(15000);
             conn.setRequestMethod("GET");
@@ -131,21 +138,32 @@ public class DishDBNetUpdater {
                 JSONObject jObject = new JSONObject(contentAsString);
                 JSONArray jDishArray = jObject.getJSONArray("recipes");
 
-                for (int i = 0; i < jDishArray.length(); i++)
-                {
+                for (int i = 0; i < jDishArray.length(); i++) {
                     JSONObject oneRecipe = jDishArray.getJSONObject(i);
                     Dish dish = DishFromJSON(oneRecipe);
 
                     dishList.add(dish);
-                }
-            }
-        } catch (Exception e){
 
+                    publishProgress((int) ((i / (float) jDishArray.length()) * 100));
+                }
+                publishProgress(100);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
-            try{if(is != null)is.close();}catch(Exception e){}
+            try {
+                if(is != null) is.close();
+                if(conn != null) conn.disconnect();
+            }catch(Exception e){}
         }
 
         return  dishList;
+    }
+
+    protected void onProgressUpdate(Integer... progress) {
+        ProgressBar progressBar = (ProgressBar) myActivity.get().findViewById(R.id.main_progress_bar);
+        progressBar.setMax(100);
+        progressBar.setProgress(progress[0]);
     }
 
     private List<Dish> localDbToDishList(Context context) {
@@ -178,7 +196,7 @@ public class DishDBNetUpdater {
 
         for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
             byte[] blob = cursor.getBlob(cursor.getColumnIndexOrThrow(RecipeReaderContract.RecipeEntry.COLUMN_NAME_IMAGE));
-            Bitmap bitmap = BitmapFactory.decodeByteArray(blob , 0, blob.length);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(blob, 0, blob.length);
             Dish dish = new Dish(cursor.getString(cursor.getColumnIndexOrThrow(RecipeReaderContract.RecipeEntry.COLUMN_NAME_DISH)),
                     cursor.getString(cursor.getColumnIndexOrThrow(RecipeReaderContract.RecipeEntry.COLUMN_NAME_INGREDIENTS)),
                     cursor.getString(cursor.getColumnIndexOrThrow(RecipeReaderContract.RecipeEntry.COLUMN_NAME_COOK_STEPS)),
@@ -211,22 +229,25 @@ public class DishDBNetUpdater {
             String dishImageUrl = jObject.getString("image_url");
             dishImage = downloadImage(ONLINE_DB_URL + "/" + dishImageUrl);
         } catch (Exception e){
-
+            e.printStackTrace();
         }
 
         return new Dish(dishName, ingredients, cookSteps, dishImage);
     }
 
-    Bitmap downloadImage(String imageUrl) {
+    Bitmap downloadImage(String imageUrl) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) new URL(imageUrl).openConnection();
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(imageUrl).openConnection();
             conn.connect();
             if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 InputStream input = conn.getInputStream();
-                return BitmapFactory.decodeStream(input);
+                Bitmap result = BitmapFactory.decodeStream(input);
+                return result;
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            conn.disconnect();
         }
 
         return null;
@@ -244,5 +265,19 @@ public class DishDBNetUpdater {
         }
 
         return sb.toString();
+    }
+
+    public SyncDishesTask(Activity activity, DishFragment fragment) {
+        myActivity = new WeakReference<>(activity);
+        myFragment = new WeakReference<>(fragment);
+    }
+
+    protected Boolean doInBackground(Void... p) {
+        DishFragment.DISHES = getActual(myActivity.get(), myActivity.get().getPreferences(Context.MODE_PRIVATE));
+        return Boolean.TRUE;
+    }
+
+    protected void onPostExecute(Boolean result) {
+        myFragment.get().dishChangesNotify();
     }
 }

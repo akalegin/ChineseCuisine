@@ -3,11 +3,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <fragment android:name="com.example.andrey.chinesecuisine.DishFragment"
-        android:id="@+id/dish_fragment"
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
         android:layout_weight="1"
         android:layout_width="0dp"
+        android:layout_height="match_parent">
+
+    <ProgressBar
+        android:id="@+id/main_progress_bar"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/abc_action_bar_default_height_material"
+        style="@android:style/Widget.ProgressBar.Horizontal" />
+
+    <fragment android:name="com.example.andrey.chinesecuisine.DishFragment"
+        android:id="@+id/dish_fragment"
+        android:layout_width="match_parent"
         android:layout_height="match_parent" />
+    </LinearLayout>
 
     <fragment android:name="com.example.andrey.chinesecuisine.RecipeFragment"
         android:id="@+id/recipe_fragment"

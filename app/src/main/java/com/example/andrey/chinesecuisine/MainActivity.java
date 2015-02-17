@@ -39,7 +39,7 @@ public class MainActivity extends ActionBarActivity
         }
     }
 
-    public void onDishSelected(int position) {
+    public void onDishSelected(String dishName) {
         // Capture the article fragment from the activity layout
         RecipeFragment recipeFrag = (RecipeFragment)
                 getSupportFragmentManager().findFragmentById(R.id.recipe_fragment);
@@ -48,7 +48,7 @@ public class MainActivity extends ActionBarActivity
             // If article frag is available, we're in two-pane layout...
 
             // Call a method in the ArticleFragment to ic_update its content
-            recipeFrag.updateRecipeView(position);
+            recipeFrag.updateRecipeView(dishName);
 
         } else {
             // If the frag is not available, we're in the one-pane layout and must swap frags...
@@ -56,7 +56,7 @@ public class MainActivity extends ActionBarActivity
             // Create fragment and give it an argument for the selected article
             RecipeFragment newFragment = new RecipeFragment();
             Bundle args = new Bundle();
-            args.putInt(RecipeFragment.ARG_POSITION, position);
+            args.putString(RecipeFragment.ARG_DISH_NAME, dishName);
             newFragment.setArguments(args);
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 

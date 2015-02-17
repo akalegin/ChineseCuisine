@@ -10,16 +10,14 @@ import android.widget.ListView;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class DishFragment extends ListFragment {
-    public static List<Dish> DISHES = new ArrayList<>();
     private OnDishSelectedListener mCallback;
     private List<String> mDishNames = new ArrayList<>();
 
     // The container Activity must implement this interface so the frag can deliver messages
     public interface OnDishSelectedListener {
         /** Called by HeadlinesFragment when a list item is selected */
-        public void onDishSelected(int position);
+        public void onDishSelected(String dishName);
     }
 
     @Override
@@ -39,11 +37,9 @@ public class DishFragment extends ListFragment {
         //setListAdapter(new ArrayAdapter<String>(getActivity(), layout, getResources().getStringArray(R.array.dishes)));
     }
 
-    public void dishChangesNotify() {
+    public void dishChangesNotify(List<String> dishNames) {
         mDishNames.clear();
-        for (int i = 0; i < DISHES.size(); ++i) {
-            mDishNames.add(DISHES.get(i).getName());
-        }
+        mDishNames.addAll(dishNames);
         ((ArrayAdapter<String>)getListAdapter()).notifyDataSetChanged();
     }
 
@@ -73,10 +69,8 @@ public class DishFragment extends ListFragment {
     }
 
     @Override
-    public void onListItemClick(ListView l, View v, int position, long id) {
-        // Notify the parent activity of selected item
-        mCallback.onDishSelected(position);
-
+    public void onListItemClick(ListView l, View v, final int position, long id) {
+        mCallback.onDishSelected(mDishNames.get(position));
         // Set the item as checked to be highlighted when in two-pane layout
         getListView().setItemChecked(position, true);
     }

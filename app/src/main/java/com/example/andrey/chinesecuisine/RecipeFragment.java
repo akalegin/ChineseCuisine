@@ -2,6 +2,7 @@ package com.example.andrey.chinesecuisine;
 
 import android.content.res.Resources;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.text.Html;
@@ -13,8 +14,8 @@ import android.widget.TextView;
 
 
 public class RecipeFragment extends Fragment {
-    final static String ARG_POSITION = "position";
-    int mCurrentPosition = -1;
+    final static String ARG_DISH_NAME = "DISH_NAME";
+    String mCurrentDishName = "";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -24,7 +25,7 @@ public class RecipeFragment extends Fragment {
         // the previous article selection set by onSaveInstanceState().
         // This is primarily necessary when in the two-pane layout.
         if (savedInstanceState != null) {
-            mCurrentPosition = savedInstanceState.getInt(ARG_POSITION);
+            mCurrentDishName = savedInstanceState.getString(ARG_DISH_NAME);
         }
 
         // Inflate the layout for this fragment
@@ -42,48 +43,59 @@ public class RecipeFragment extends Fragment {
         Bundle args = getArguments();
         if (args != null) {
             // Set article based on argument passed in
-            updateRecipeView(args.getInt(ARG_POSITION));
-        } else if (mCurrentPosition != -1) {
+            updateRecipeView(args.getString(ARG_DISH_NAME));
+        } else if (!mCurrentDishName.equals("")) {
             // Set article based on saved instance state defined during onCreateView
-            updateRecipeView(mCurrentPosition);
+            updateRecipeView(mCurrentDishName);
         }
     }
 
-    public void updateRecipeView(int position) {
-        Resources res = getResources();
-        TextView recipe = (TextView) getActivity().findViewById(R.id.recipe);
+    public void updateRecipeView(String dishName) {
+        AsyncTask<String, Integer, Dish> dishExtractTask = new AsyncTask<String, Integer, Dish>(){
+            protected Dish doInBackground(String... p) {
 
-        Dish currentDish = DishFragment.DISHES.get(position);
+                RecipeReaderDbHelper dbHelper = new RecipeReaderDbHelper(getActivity());
 
-        StringBuilder stringBuilder = new StringBuilder();
+                return dbHelper.getDishByName(p[0]);
+            }
 
-        stringBuilder.append("<H1>");
-        stringBuilder.append(getString(R.string.ingredients));
-        stringBuilder.append("</H1>");
-        stringBuilder.append("<br>");
+            protected void onPostExecute(Dish currentDish) {
+                Resources res = getResources();
+                TextView recipe = (TextView) getActivity().findViewById(R.id.recipe);
 
-        stringBuilder.append(currentDish.getIngredients());
+                StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append("<br>");
-        stringBuilder.append("<H1>");
-        stringBuilder.append(getString(R.string.cook_steps));
-        stringBuilder.append("</H1>");
-        stringBuilder.append("<br>");
+                stringBuilder.append("<H1>");
+                stringBuilder.append(getString(R.string.ingredients));
+                stringBuilder.append("</H1>");
+                stringBuilder.append("<br>");
 
-        stringBuilder.append(currentDish.getCookSteps());
+                stringBuilder.append(currentDish.getIngredients());
 
-        recipe.setText(Html.fromHtml(stringBuilder.toString()));
+                stringBuilder.append("<br>");
+                stringBuilder.append("<H1>");
+                stringBuilder.append(getString(R.string.cook_steps));
+                stringBuilder.append("</H1>");
+                stringBuilder.append("<br>");
 
-        ImageView dishImageView = (ImageView) getActivity().findViewById(R.id.dinner_is_served);
-        if (currentDish.getImage() != null) {
-            //dishImageView.setImageDrawable(res.obtainTypedArray(R.array.dish_img_array).getDrawable(position));
-            dishImageView.setImageDrawable(new BitmapDrawable(res, currentDish.getImage()));
-            dishImageView.setVisibility(View.VISIBLE);
-        } else {
-            dishImageView.setVisibility(View.INVISIBLE);
-        }
+                stringBuilder.append(currentDish.getCookSteps());
 
-        mCurrentPosition = position;
+                recipe.setText(Html.fromHtml(stringBuilder.toString()));
+
+                ImageView dishImageView = (ImageView) getActivity().findViewById(R.id.dinner_is_served);
+                if (currentDish.getImage() != null) {
+                    //dishImageView.setImageDrawable(res.obtainTypedArray(R.array.dish_img_array).getDrawable(position));
+                    dishImageView.setImageDrawable(new BitmapDrawable(res, currentDish.getImage()));
+                    dishImageView.setVisibility(View.VISIBLE);
+                } else {
+                    dishImageView.setVisibility(View.INVISIBLE);
+                }
+            }
+
+        };
+        dishExtractTask.execute(dishName);
+
+        mCurrentDishName = dishName;
     }
 
     @Override
@@ -91,7 +103,7 @@ public class RecipeFragment extends Fragment {
         super.onSaveInstanceState(outState);
 
         // Save the current article selection in case we need to recreate the fragment
-        outState.putInt(ARG_POSITION, mCurrentPosition);
+        outState.putString(ARG_DISH_NAME, mCurrentDishName);
     }
 
 }

@@ -1,7 +1,6 @@
 package com.example.andrey.chinesecuisine;
 
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
@@ -24,7 +23,7 @@ import java.util.List;
 
 public class SyncDishesTask extends AsyncTask<Void, Integer, List<String>> {
     private final WeakReference<Activity> myActivity;
-    private final WeakReference<DishFragment> myFragment;
+    private final WeakReference<DishListFragment> myFragment;
 
     private static String ONLINE_DB_URL = "http://kalegin-chinese-cuisine.appspot.com";
     private static String RECIPES_SUFFIX = "recipes";
@@ -184,7 +183,7 @@ public class SyncDishesTask extends AsyncTask<Void, Integer, List<String>> {
         return sb.toString();
     }
 
-    public SyncDishesTask(Activity activity, DishFragment fragment) {
+    public SyncDishesTask(Activity activity, DishListFragment fragment) {
         myActivity = new WeakReference<>(activity);
         myFragment = new WeakReference<>(fragment);
     }

@@ -13,7 +13,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 
-public class RecipeFragment extends Fragment {
+public class RecipeViewFragment extends Fragment {
     final static String ARG_DISH_NAME = "DISH_NAME";
     String mCurrentDishName = "";
 

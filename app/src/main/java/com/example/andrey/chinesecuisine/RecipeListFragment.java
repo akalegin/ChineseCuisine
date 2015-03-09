@@ -5,19 +5,23 @@ import android.support.v4.app.ListFragment;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DishListFragment extends ListFragment {
-    private OnDishSelectedListener mCallback;
+public class RecipeListFragment extends ListFragment {
+    private OnRecipeDataChangedListener mCallback;
     private List<String> mDishNames = new ArrayList<>();
 
     // The container Activity must implement this interface so the frag can deliver messages
-    public interface OnDishSelectedListener {
+    public interface OnRecipeDataChangedListener {
         /** Called by HeadlinesFragment when a list item is selected */
-        public void onDishSelected(String dishName);
+        public void onRecipeSelected(String dishName);
+    }
+
+    public void applyFilter(List<String> selectedTags) {
+        ((RecipeFilteredListAdapter<String>)getListAdapter()).setSelectedTags(selectedTags);
+        ((RecipeFilteredListAdapter<String>)getListAdapter()).getFilter().filter(null);
     }
 
     @Override
@@ -28,19 +32,16 @@ public class DishListFragment extends ListFragment {
         int layout = Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ?
                 android.R.layout.simple_list_item_activated_1 : android.R.layout.simple_list_item_1;
 
-        setListAdapter(new ArrayAdapter<>(getActivity(), layout, mDishNames));
-
-        SyncDishesTask task = new SyncDishesTask(getActivity(), this);
-        task.execute();
+        setListAdapter(new RecipeFilteredListAdapter<>(getActivity(), layout, mDishNames));
 
         // Create an array adapter for the list view, using the Ipsum dishes array
-        //setListAdapter(new ArrayAdapter<String>(getActivity(), layout, getResources().getStringArray(R.array.dishes)));
+        //setListAdapter(new RecipeFilteredListAdapter<String>(getActivity(), layout, getResources().getStringArray(R.array.dishes)));
     }
 
-    public void dishChangesNotify(List<String> dishNames) {
+    public void recipeListChanged(List<String> recipeNames) {
         mDishNames.clear();
-        mDishNames.addAll(dishNames);
-        ((ArrayAdapter<String>)getListAdapter()).notifyDataSetChanged();
+        mDishNames.addAll(recipeNames);
+        ((RecipeFilteredListAdapter<String>)getListAdapter()).notifyDataSetChanged();
     }
 
     @Override
@@ -61,7 +62,7 @@ public class DishListFragment extends ListFragment {
         // This makes sure that the container activity has implemented
         // the callback interface. If not, it throws an exception.
         try {
-            mCallback = (OnDishSelectedListener) activity;
+            mCallback = (OnRecipeDataChangedListener) activity;
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString()
                     + " must implement OnDishSelectedListener");
@@ -70,7 +71,7 @@ public class DishListFragment extends ListFragment {
 
     @Override
     public void onListItemClick(ListView l, View v, final int position, long id) {
-        mCallback.onDishSelected(mDishNames.get(position));
+        mCallback.onRecipeSelected(mDishNames.get(position));
         // Set the item as checked to be highlighted when in two-pane layout
         getListView().setItemChecked(position, true);
     }

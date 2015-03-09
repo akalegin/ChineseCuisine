@@ -3,24 +3,43 @@ package com.example.andrey.chinesecuisine;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.support.v4.app.DialogFragment;
 import android.os.Bundle;
+import android.widget.ListView;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class RecipeFilterDialog extends DialogFragment {
     public interface Listener {
-        public void onDialogPositiveClick(DialogFragment dialog);
+        public void onDialogPositiveClick(DialogFragment dialog, List<String> selectedTags);
         public void onDialogNegativeClick(DialogFragment dialog);
     }
 
     // Use this instance of the interface to deliver action events
     Listener mListener;
-    List<Integer> mSelectedItems;
+    List<String> mTags = new ArrayList<>();
+    List<String> mSelectedTags = new ArrayList<>();
+    boolean[] mCheckedItems;
+    boolean[] mLastCheckedItems;
 
     public RecipeFilterDialog() {
+    }
+
+    public void setTags(List<String> tags, Context context) {
+        mTags.clear();
+        mTags.add(context.getResources().getString(R.string.ALL));
+        mTags.addAll(tags);
+        if (mCheckedItems == null || mCheckedItems.length != mTags.size()) {
+            mCheckedItems = new boolean[mTags.size()];
+            mLastCheckedItems = new boolean[mTags.size()];
+            for (int i = 0; i < mCheckedItems.length; ++i) {
+                mCheckedItems[i] = true;
+                mLastCheckedItems[i] = true;
+            }
+        }
     }
 
     /*@Override
@@ -53,23 +72,38 @@ public class RecipeFilterDialog extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        mSelectedItems = new ArrayList();  // Where we track the selected items
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         // Set the dialog title
         builder.setTitle(R.string.search_title)
                 // Specify the list array, the items to be selected by default (null for none),
                 // and the listener through which to receive callbacks when items are selected
-                .setMultiChoiceItems(R.array.dish_characteristics, null,
+                .setMultiChoiceItems(mTags.toArray(new String[mTags.size()]),
+                        mCheckedItems,
                         new DialogInterface.OnMultiChoiceClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which,
                                                 boolean isChecked) {
+
+                                ListView list = ((AlertDialog) dialog).getListView();
                                 if (isChecked) {
-                                    // If the user checked the item, add it to the selected items
-                                    mSelectedItems.add(which);
-                                } else if (mSelectedItems.contains(which)) {
-                                    // Else, if the item is already in the array, remove it
-                                    mSelectedItems.remove(Integer.valueOf(which));
+                                    if (which == 0) {
+                                        for (int i = 0; i < list.getCount(); ++i) {
+                                            list.setItemChecked(i, true);
+                                            mCheckedItems[i] = true;
+                                        }
+                                        mSelectedTags.clear();
+                                        mSelectedTags.addAll(mTags);
+                                    } else
+                                        mSelectedTags.add(mTags.get(which));
+                                } else {
+                                    if (which == 0) {
+                                        for (int i = 0; i < list.getCount(); ++i) {
+                                            list.setItemChecked(i, false);
+                                            mCheckedItems[i] = false;
+                                        }
+                                        mSelectedTags.clear();
+                                    } else
+                                        mSelectedTags.remove(mTags.get(which));
                                 }
                             }
                         })
@@ -78,17 +112,33 @@ public class RecipeFilterDialog extends DialogFragment {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
                         // Send the positive button event back to the host activity
-                        mListener.onDialogPositiveClick(RecipeFilterDialog.this);
+                        List<String> selectedTags = new ArrayList<String>();
+                        selectedTags.addAll(mSelectedTags);
+                        selectedTags.remove(mTags.get(0));
+                        mListener.onDialogPositiveClick(RecipeFilterDialog.this, selectedTags);
+                        for (int i = 0; i < mCheckedItems.length; ++i) {
+                            mLastCheckedItems[i] = mCheckedItems[i];
+                        }
                     }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
                         mListener.onDialogNegativeClick(RecipeFilterDialog.this);
+                        ListView list = ((AlertDialog) dialog).getListView();
+                        mSelectedTags.clear();
+                        for (int i = 0; i < mCheckedItems.length; ++i) {
+                            mCheckedItems[i] = mLastCheckedItems[i];
+                            list.setItemChecked(i, mLastCheckedItems[i]);
+                            if (mLastCheckedItems[i]) {
+                               mSelectedTags.add(mTags.get(i));
+                            }
+                        }
                     }
                 });
 
         return builder.create();
     }
+
 
 }

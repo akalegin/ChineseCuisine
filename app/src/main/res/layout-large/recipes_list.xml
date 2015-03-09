@@ -15,8 +15,8 @@
         android:layout_height="@dimen/abc_action_bar_default_height_material"
         style="@android:style/Widget.ProgressBar.Horizontal" />
 
-    <fragment android:name="com.example.andrey.chinesecuisine.DishListFragment"
-        android:id="@+id/dish_list_fragment"
+    <fragment android:name="com.example.andrey.chinesecuisine.RecipeListFragment"
+        android:id="@+id/recipe_list_fragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
     </LinearLayout>

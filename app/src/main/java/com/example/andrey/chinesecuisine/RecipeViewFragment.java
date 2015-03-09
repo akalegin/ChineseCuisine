@@ -51,15 +51,15 @@ public class RecipeViewFragment extends Fragment {
     }
 
     public void updateRecipeView(String dishName) {
-        AsyncTask<String, Integer, Dish> dishExtractTask = new AsyncTask<String, Integer, Dish>(){
-            protected Dish doInBackground(String... p) {
+        AsyncTask<String, Integer, Recipe> dishExtractTask = new AsyncTask<String, Integer, Recipe>(){
+            protected Recipe doInBackground(String... p) {
 
                 RecipeReaderDbHelper dbHelper = new RecipeReaderDbHelper(getActivity());
 
-                return dbHelper.getDishByName(p[0]);
+                return dbHelper.getRecipeByName(p[0]);
             }
 
-            protected void onPostExecute(Dish currentDish) {
+            protected void onPostExecute(Recipe currentDish) {
                 Resources res = getResources();
                 TextView recipe = (TextView) getActivity().findViewById(R.id.recipe);
 
@@ -70,7 +70,7 @@ public class RecipeViewFragment extends Fragment {
                 stringBuilder.append("</H1>");
                 stringBuilder.append("<br>");
 
-                stringBuilder.append(currentDish.getIngredients());
+                stringBuilder.append(currentDish.getIngredients().replace("|", "<br>"));
 
                 stringBuilder.append("<br>");
                 stringBuilder.append("<H1>");
@@ -78,9 +78,22 @@ public class RecipeViewFragment extends Fragment {
                 stringBuilder.append("</H1>");
                 stringBuilder.append("<br>");
 
-                stringBuilder.append(currentDish.getCookSteps());
+                stringBuilder.append(currentDish.getCookSteps().replace("|", "<br>"));
 
                 recipe.setText(Html.fromHtml(stringBuilder.toString()));
+
+                stringBuilder.setLength(0);
+                TextView tags = (TextView) getActivity().findViewById(R.id.tags);
+                stringBuilder.append("<H1>");
+                stringBuilder.append(getString(R.string.tags_label));
+                stringBuilder.append("</H1>");
+                for (String tag : currentDish.getTags()) {
+                    stringBuilder.append("<br>");
+                    stringBuilder.append(tag);
+                }
+                stringBuilder.append("<br>");
+
+                tags.setText(Html.fromHtml(stringBuilder.toString()));
 
                 ImageView dishImageView = (ImageView) getActivity().findViewById(R.id.dinner_is_served);
                 if (currentDish.getImage() != null) {

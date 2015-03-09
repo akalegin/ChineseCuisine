@@ -8,14 +8,22 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends ActionBarActivity
-        implements DishListFragment.OnDishSelectedListener,
+        implements RecipeListFragment.OnRecipeDataChangedListener,
         RecipeFilterDialog.Listener {
+
+    RecipeListFragment mListFragment;
+    List<String> mTags = new ArrayList<>();
+    RecipeFilterDialog mFilterDialog = null;
 
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.recipes_list);
 
         // Check whether the activity is using the layout version with
@@ -30,19 +38,34 @@ public class MainActivity extends ActionBarActivity
             }
 
             // Create an instance of ExampleFragment
-            DishListFragment firstFragment = new DishListFragment();
+            mListFragment = new RecipeListFragment();
 
             // In case this activity was started with special instructions from an Intent,
             // pass the Intent's extras to the fragment as arguments
-            firstFragment.setArguments(getIntent().getExtras());
+            mListFragment.setArguments(getIntent().getExtras());
 
             // Add the fragment to the 'fragment_container' FrameLayout
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.fragment_container, firstFragment).commit();
+                    .add(R.id.fragment_container, mListFragment).commit();
+        } else {
+            mListFragment = (RecipeListFragment)
+                    getSupportFragmentManager().findFragmentById(R.id.recipe_list_fragment);
         }
+
+        SyncRecipesTask task = new SyncRecipesTask(this);
+        task.execute();
     }
 
-    public void onDishSelected(String dishName) {
+    public void dishChangesNotify(Recipe.MainData result) {
+        if (mListFragment != null) {
+            mListFragment.recipeListChanged(result.recipeNames);
+        }
+
+        mTags.clear();
+        mTags.addAll(result.tags);
+    }
+
+    public void onRecipeSelected(String recipeName) {
         // Capture the article fragment from the activity layout
         RecipeViewFragment recipeFrag = (RecipeViewFragment)
                 getSupportFragmentManager().findFragmentById(R.id.recipe_view_fragment);
@@ -51,7 +74,7 @@ public class MainActivity extends ActionBarActivity
             // If article frag is available, we're in two-pane layout...
 
             // Call a method in the ArticleFragment to ic_update its content
-            recipeFrag.updateRecipeView(dishName);
+            recipeFrag.updateRecipeView(recipeName);
 
         } else {
             // If the frag is not available, we're in the one-pane layout and must swap frags...
@@ -59,7 +82,7 @@ public class MainActivity extends ActionBarActivity
             // Create fragment and give it an argument for the selected article
             RecipeViewFragment newFragment = new RecipeViewFragment();
             Bundle args = new Bundle();
-            args.putString(RecipeViewFragment.ARG_DISH_NAME, dishName);
+            args.putString(RecipeViewFragment.ARG_DISH_NAME, recipeName);
             newFragment.setArguments(args);
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 
@@ -93,13 +116,18 @@ public class MainActivity extends ActionBarActivity
     }
 
     private boolean newSearch() {
-        RecipeFilterDialog dialog = new RecipeFilterDialog();
-        dialog.show(getSupportFragmentManager(), "RecipeFilterDialog");
+        if (mFilterDialog == null) {
+            mFilterDialog = new RecipeFilterDialog();
+        }
+        mFilterDialog.setTags(mTags, this);
+
+        mFilterDialog.show(getSupportFragmentManager(), "RecipeFilterDialog");
 
         return true;
     }
 
-    public void onDialogPositiveClick(DialogFragment dialog) {
+    public void onDialogPositiveClick(DialogFragment dialog, List<String> selectedTags) {
+        mListFragment.applyFilter(selectedTags);
     }
 
     public void onDialogNegativeClick(DialogFragment dialog) {

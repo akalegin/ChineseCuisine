@@ -1,6 +1,5 @@
 package com.example.andrey.chinesecuisine;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
@@ -19,11 +18,10 @@ import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.List;
+import java.util.Arrays;
 
-public class SyncDishesTask extends AsyncTask<Void, Integer, List<String>> {
-    private final WeakReference<Activity> myActivity;
-    private final WeakReference<DishListFragment> myFragment;
+public class SyncRecipesTask extends AsyncTask<Void, Integer, Recipe.MainData> {
+    private final WeakReference<MainActivity> myActivity;
 
     private static String ONLINE_DB_URL = "http://kalegin-chinese-cuisine.appspot.com";
     private static String RECIPES_SUFFIX = "recipes";
@@ -45,6 +43,8 @@ public class SyncDishesTask extends AsyncTask<Void, Integer, List<String>> {
             editor.putInt(context.getResources().getString(R.string.local_db_version), onlineDbVersion);
             editor.commit();
         }
+
+        dbHelper.cacheTags();
     }
 
     private int getOnlineDbVersion(int localDbVersion) {
@@ -107,9 +107,9 @@ public class SyncDishesTask extends AsyncTask<Void, Integer, List<String>> {
 
                 for (int i = 0; i < jDishArray.length(); i++) {
                     JSONObject oneRecipe = jDishArray.getJSONObject(i);
-                    Dish dish = DishFromJSON(oneRecipe);
+                    Recipe dish = RecipeFromJSON(oneRecipe);
 
-                    dbHelper.addDishToDB(dish, db);
+                    dbHelper.addRecipeToDB(dish, db);
 
                     publishProgress((int) ((i / (float) jDishArray.length()) * 100));
                 }
@@ -132,16 +132,18 @@ public class SyncDishesTask extends AsyncTask<Void, Integer, List<String>> {
         progressBar.setProgress(progress[0]);
     }
 
-    public Dish DishFromJSON(JSONObject jObject) {
+    public Recipe RecipeFromJSON(JSONObject jObject) {
         String dishName = "";
         String ingredients = "";
         String cookSteps = "";
+        String tags = "";
         Bitmap dishImage = null;
 
         try {
-            dishName = jObject.getString("dish");
+            dishName = jObject.getString("name");
             ingredients = jObject.getString("ingredients");
             cookSteps = jObject.getString("cook_steps");
+            tags = jObject.getString("tags");
 
             String dishImageUrl = jObject.getString("image_url");
             dishImage = downloadImage(ONLINE_DB_URL + "/" + dishImageUrl);
@@ -149,7 +151,7 @@ public class SyncDishesTask extends AsyncTask<Void, Integer, List<String>> {
             e.printStackTrace();
         }
 
-        return new Dish(dishName, ingredients, cookSteps, dishImage);
+        return new Recipe(dishName, ingredients, cookSteps, dishImage, Arrays.asList(tags.split("\\|")));
     }
 
     Bitmap downloadImage(String imageUrl) throws IOException {
@@ -183,18 +185,18 @@ public class SyncDishesTask extends AsyncTask<Void, Integer, List<String>> {
         return sb.toString();
     }
 
-    public SyncDishesTask(Activity activity, DishListFragment fragment) {
+    public SyncRecipesTask(MainActivity activity) {
         myActivity = new WeakReference<>(activity);
-        myFragment = new WeakReference<>(fragment);
     }
 
-    protected List<String> doInBackground(Void... p) {
+    protected Recipe.MainData doInBackground(Void... p) {
         RecipeReaderDbHelper dbHelper = new RecipeReaderDbHelper(myActivity.get());
         updateLocalDb(myActivity.get(), myActivity.get().getPreferences(Context.MODE_PRIVATE), dbHelper);
-        return dbHelper.getDishNames();
+
+        return new Recipe.MainData(dbHelper.getRecipeNames(), dbHelper.getAllTags());
     }
 
-    protected void onPostExecute(List<String> result) {
-        myFragment.get().dishChangesNotify(result);
+    protected void onPostExecute(Recipe.MainData result) {
+        myActivity.get().dishChangesNotify(result);
     }
 }

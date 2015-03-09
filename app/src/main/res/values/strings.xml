@@ -6,8 +6,10 @@
     <string name="search">Поиск</string>
     <string name="action_update">Обновить</string>
     <string name="ingredients">Ингредиенты</string>
+    <string name="tags_label">Метки</string>
     <string name="cook_steps">Порядок действий</string>
     <string name="local_db_version">local_db_version</string>
+    <string name="ALL">ВСЕ</string>
 
     <integer name="default_db_version">1</integer>
 
